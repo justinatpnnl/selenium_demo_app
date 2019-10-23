@@ -1,0 +1,120 @@
+<div class="row-fluid seleniumStep">
+<% if (test.command === "Open") { %>
+    <div class="span2">
+        <select name="command" class="editable input-block-level command">
+            <option disabled="disabled">Choose command</option>
+            <option value="Open" selected="selected">Go to URL</option>
+            <option value="Verify title">Verify Title</option>
+            <option value="Find">Find element</option>
+            <option value="Click">Click element</option>
+            <option value="Type">Enter text</option>
+            <option value="Health">Health check</option>
+        </select>
+    </div>
+    <div class="span6">
+        <input type="text" name="url" value="<%- test.url %>" class="editable input-block-level input-lg" />
+    </div>
+<% } else if (test.command === "Verify title") { %>
+    <div class="span2">
+        <select name="command" class="editable input-block-level command">
+            <option disabled="disabled">Choose command</option>
+            <option value="Open">Go to URL</option>
+            <option value="Verify title" selected="selected">Verify Title</option>
+            <option value="Find">Find element</option>
+            <option value="Click">Click element</option>
+            <option value="Type">Enter text</option>
+            <option value="Health">Health check</option>
+        </select>
+    </div>
+    <div class="span2">
+        <select name="assert" class="editable input-block-level">
+            <option value="equals" <%- (test.assert === "equals") ? 'selected="selected"' : '' %>>Equals</option>
+            <option value="contains" <%- (test.assert === "contains") ? 'selected="selected"' : '' %>>Contains</option>
+        </select>
+    </div>
+    <div class="span4">
+        <input type="text" name="title_expected" value="<%- test.title_expected %>" class="editable input-block-level input-lg" />
+    </div>
+<% } else if (test.command === "Find") { %>
+    <div class="span2">
+        <select name="command" class="editable input-block-level command">
+            <option disabled="disabled">Choose command</option>
+            <option value="Open">Go to URL</option>
+            <option value="Verify title">Verify Title</option>
+            <option value="Find" selected="selected">Find element</option>
+            <option value="Click">Click element</option>
+            <option value="Type">Enter text</option>
+            <option value="Health">Health check</option>
+        </select>
+    </div>
+    <div class="span2">
+        <select name="element_name" class="editable input-block-level">
+            <option disabled="disabled" <%- !test.element_name ? 'selected="selected"' : '' %>>Choose option</option>
+            <option value="id" <%- (test.element_name === "id") ? 'selected="selected"' : '' %>>with ID</option>
+            <option value="xpath" <%- (test.element_name === "xpath") ? 'selected="selected"' : '' %>>with XPATH</option>
+            <option value="linktext" <%- (test.element_name === "linktext") ? 'selected="selected"' : '' %>>with Link Text</option>
+        </select>
+    </div>
+    <div class="span4">
+        <input type="text" name="element_value" value="<%- test.element_value %>" class="editable input-block-level input-lg" />
+    </div>
+<% } else if (test.command === "Click") { %>
+    <div class="span2">
+        <select name="command" class="editable input-block-level command">
+            <option disabled="disabled">Choose command</option>
+            <option value="Open">Go to URL</option>
+            <option value="Verify title">Verify Title</option>
+            <option value="Find">Find element</option>
+            <option value="Click" selected="selected">Click element</option>
+            <option value="Type">Enter text</option>
+            <option value="Health">Health check</option>
+        </select>
+    </div>
+    <div class="span2">
+        <select name="element_name" class="editable input-block-level">
+            <option disabled="disabled" <%- !test.element_name ? 'selected="selected"' : '' %>>Choose option</option>
+            <option value="id" <%- (test.element_name === "id") ? 'selected="selected"' : '' %>>with ID</option>
+            <option value="xpath" <%- (test.element_name === "xpath") ? 'selected="selected"' : '' %>>with XPATH</option>
+            <option value="linktext" <%- (test.element_name === "linktext") ? 'selected="selected"' : '' %>>with Link Text</option>
+        </select>
+    </div>
+    <div class="span4">
+        <input type="text" name="element_value" value="<%- test.element_value %>" class="editable input-block-level input-lg" />
+    </div>
+<% } else if (test.command === "Type") { %>
+    <div class="span2">
+        <select name="command" class="editable input-block-level command">
+            <option disabled="disabled">Choose command</option>
+            <option value="Open">Go to URL</option>
+            <option value="Verify title">Verify Title</option>
+            <option value="Find">Find element</option>
+            <option value="Click">Click element</option>
+            <option value="Type" selected="selected">Enter text</option>
+            <option value="Health">Health check</option>
+        </select>
+    </div>
+    <div class="span6">
+        <input type="text" name="text" value="<%- test.text %>" class="editable input-block-level input-lg" />
+    </div>
+<% } else if (test.command === "Health") { %>
+    <div class="span2">
+        <select name="command" class="editable input-block-level command">
+            <option disabled="disabled">Choose command</option>
+            <option value="Open">Go to URL</option>
+            <option value="Verify title">Verify Title</option>
+            <option value="Find">Find element</option>
+            <option value="Click">Click element</option>
+            <option value="Type">Enter text</option>
+            <option value="Health" selected="selected">Health check</option>
+        </select>
+    </div>
+    <div class="span6">
+        <input type="text" placeholder="Health check key (Default: isHealthy)" name="key" value="<%- test.text %>" class="editable input-block-level input-lg" />
+    </div>
+<% } %>
+    <div class="span3 stepStatus"></div>
+    <div class="pull-right">
+        <input name="enabled" type="checkbox" class="editable" checked="1" />
+        <button type="button" class="close removeStep">x</button>
+    </div>
+</div>

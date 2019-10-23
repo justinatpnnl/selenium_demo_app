@@ -1,0 +1,172 @@
+<form>
+  <label>Website Monitoring Overview</label>
+  <search id="performance_logs">
+    <query>index=web sourcetype=_json | table _time, application.*, environment.*, results.*</query>
+    <earliest>$earliest$</earliest>
+    <latest>$latest$</latest>
+  </search>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="time" searchWhenChanged="true">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="item_id" searchWhenChanged="true">
+      <label>Application Name</label>
+      <search>
+        <query>index=web sourcetype=_json 
+| stats count by application.item_id, application.item_name
+| rename application.* as *
+| sort item_name</query>
+        <earliest>-90d@d</earliest>
+        <latest>now</latest>
+      </search>
+      <fieldForLabel>item_name</fieldForLabel>
+      <fieldForValue>item_id</fieldForValue>
+      <choice value="*">All</choice>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <chart>
+        <title>Page Availibility</title>
+        <search base="performance_logs">
+          <query>| search application.item_id=$item_id$ results.status=*
+| timechart span=20m count by results.status</query>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="charting.fieldColors">{"Failed":0xFF0000,"Warning":0xFFFF00, "Passed":0x73A550}</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Transaction Errors over time</title>
+        <search base="performance_logs">
+          <query>| search application.item_id="$item_id$" results.status=failed 
+| timechart limit=0 minspan=10 count as failed by application.item_name</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Average Page Load Duration Over Time</title>
+        <search base="performance_logs">
+          <query>| search application.item_id="$item_id$"
+| bucket _time span=10m
+| chart avg(results.duration) as duration, count(eval('results.status'="Failed")) as Errors over _time
+| predict duration as "Predicted Load Time" 
+| rename duration as "Load Time"
+| sort _time</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.text">Load time in Seconds</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.overlayFields">Errors</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Error Messages</title>
+        <search base="performance_logs">
+          <query>| search results.status="Failed" application.item_id="$item_id$"
+| stats count by results.error
+| sort -count</query>
+        </search>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Transaction Performance by Browser</title>
+        <search base="performance_logs">
+          <query>| search application.item_id="$item_id$"
+| eval success=if('results.status'="Failed",0, 1)
+| eval browser = 'environment.browser.name' . " " . 'environment.browser.version'
+| stats count as total, sum(success) as success, avg(results.duration) as avg_tx, by browser
+| eval fail=total-success
+| eval avg_tx = round(avg_tx,2)
+| table browser, total, success, fail, avg_tx</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Performance by OS</title>
+        <search base="performance_logs">
+          <query>| search application.item_id="$item_id$" 
+| eval success=if('results.status'!="Failed",1,0) 
+| stats count as total, sum(success) as success avg(results.duration) as avg_tx by environment.host.os 
+| eval fail=total-success
+| rename environment.host.os as os
+| eval avg_tx = round(avg_tx,2)
+| table os, total, success, fail, avg_tx</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>

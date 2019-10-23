@@ -1,0 +1,3 @@
+[submodule "bin/website_monitoring"]
+	path = bin/website_monitoring
+	url = https://github.com/justinatpnnl/splunk_web_transactions_generator.git

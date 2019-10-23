@@ -1,0 +1,11 @@
+<nav search_view="search">
+  <view name="details" default='true' />
+  <view name="configuration" />
+  <collection label="More">
+    <view name="search" />
+    <view name="datasets" />
+    <view name="reports" />
+    <view name="alerts" />
+    <view name="dashboards" />
+  </collection>
+</nav>

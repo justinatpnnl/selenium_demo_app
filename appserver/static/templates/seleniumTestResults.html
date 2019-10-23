@@ -1,0 +1,6 @@
+<div class="row-fluid">
+    <span class="label label-<%- result.status == 'Failed' ? 'important' : 'success' %> text-center span2"><h3><strong>Status:</strong> <%- result.status %></h3></span>
+    <div class="span10">
+        <p class="lead" style="line-height: 38px; margin-bottom: 5px;"><%- result.status == 'Failed' ? result.error : "All tests passed!" %></p>
+    </div>
+</div>

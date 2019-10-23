@@ -1,0 +1,315 @@
+<form stylesheet="website_monitoring.css" theme="light">
+  <label>Website Performance Details</label>
+  <search id="performance_logs">
+    <query>| savedsearch "website_performance_details" item_id="$item_id$"</query>
+    <earliest>$earliest$</earliest>
+    <latest>$latest$</latest>
+  </search>
+  <search id="testinfo" base="performance_logs">
+    <query>| search _time=$event_start$ 
+| eval logs = mvcount(logs)
+| fields environment.*, logs, results.*, test
+| rename results.* as *
+| eval browser = 'environment.browser.name' . " " . 'environment.browser.version'
+| fillnull logs screenshot value=0
+    </query>
+    <done>
+      <condition match="$result.screenshot$!=&quot;0&quot; AND $result.logs$&gt;0">
+        <set token="waterfall">1</set>
+        <set token="screenshot">$result.screenshot$</set>
+      </condition>
+      <condition match="$result.screenshot$!=&quot;0&quot; AND $result.logs$==&quot;0&quot;">
+        <unset token="waterfall"></unset>
+        <set token="screenshot">$result.screenshot$</set>
+      </condition>
+      <condition match="$result.screenshot$==&quot;0&quot; AND $result.logs$&gt;0">
+        <set token="waterfall">1</set>
+        <unset token="screenshot"></unset>
+      </condition>
+      <condition>
+        <unset token="waterfall"></unset>
+        <unset token="screenshot"></unset>
+      </condition>
+    </done>
+  </search>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="time" searchWhenChanged="true">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="item_id" searchWhenChanged="true">
+      <label>Application Name</label>
+      <search>
+        <query>index=web sourcetype=_json 
+| stats count by application.item_id
+| rename application.item_id as item_id
+| sort item_id</query>
+        <earliest>-24h</earliest>
+        <latest>now</latest>
+      </search>
+      <fieldForLabel>item_id</fieldForLabel>
+      <fieldForValue>item_id</fieldForValue>
+      <change>
+        <unset token="event_start"></unset>
+        <unset token="screenshot"></unset>
+        <unset token="waterfall"></unset>
+      </change>
+    </input>
+  </fieldset>
+  <row depends="$item_id$">
+    <panel>
+      <viz type="event-timeline-viz.event-timeline-viz">
+        <title>Page Availibility</title>
+        <search>
+          <query>| savedsearch "website_performance_details" item_id="$item_id$" 
+| table _time, results.status, results.error 
+| rename results.status as label, _time as start, environment.browser.name as browser, results.error as error 
+| sort limit=0 start 
+| autoregress label as previous 
+| sort limit=0 -start 
+| streamstats count by label reset_on_change=true 
+| search NOT (label=Passed previous=Passed) 
+| autoregress start as end 
+| addinfo 
+| eval end = case(isnull(end), round(info_max_time,0), label="Failed", null(), 1==1, end) 
+| eval color = case(label="Passed", "green", label="Failed", "red", label="Warning", "yellow") 
+| eval group = label 
+| eval tooltip = if(label="Passed", count . " consecutive tests passed", error) 
+| table label start end group color tooltip</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="event-timeline-viz.event-timeline-viz.backgroundColor">#ffffff</option>
+        <option name="event-timeline-viz.event-timeline-viz.eventColor">#d5ddf6</option>
+        <option name="event-timeline-viz.event-timeline-viz.maxZoom">86400000</option>
+        <option name="event-timeline-viz.event-timeline-viz.minZoom">10</option>
+        <option name="event-timeline-viz.event-timeline-viz.orientation">bottom</option>
+        <option name="event-timeline-viz.event-timeline-viz.sortGroupsBy">name</option>
+        <option name="event-timeline-viz.event-timeline-viz.stack">false</option>
+        <option name="event-timeline-viz.event-timeline-viz.tokenAllVisible">tok_et_all_visible</option>
+        <option name="event-timeline-viz.event-timeline-viz.tokenData">tok_et_data</option>
+        <option name="event-timeline-viz.event-timeline-viz.tokenEnd">tok_et_end</option>
+        <option name="event-timeline-viz.event-timeline-viz.tokenLabel">tok_et_label</option>
+        <option name="event-timeline-viz.event-timeline-viz.tokenStart">event_start</option>
+        <option name="event-timeline-viz.event-timeline-viz.tooltipDateFormat">DD-MMM-YYYY</option>
+        <option name="event-timeline-viz.event-timeline-viz.tooltipTimeFormat">h:mm:ss A</option>
+        <option name="height">177</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="link.visible">false</option>
+      </viz>
+    </panel>
+  </row>
+  <row depends="$item_id$,$event_start$">
+    <panel>
+      <title>Test Steps</title>
+      <table>
+        <search base="testinfo">
+          <query>| table test
+| mvexpand test
+| spath input=test
+| table description, duration, status
+| rename description as Test, duration as Duration, status as Status</query>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="link.visible">false</option>
+        <format type="color" field="Status">
+          <colorPalette type="map">{"Failed":#DC4E41,"Warning":#F8BE34,"Passed":#53A051}</colorPalette>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row depends="$item_id$,$event_start$">
+    <panel>
+      <title>Test Details</title>
+      <table>
+        <search base="testinfo">
+          <query>| eval offset = if(status="Failed", 1, 0) 
+| eval "Successful Tests" = tests_run - offset . " of " . tests_count 
+| table environment.host.os, environment.host.name, browser, status, error, duration, "Successful Tests" 
+| rename browser as "Test Browser", status as Status, error as Error, duration as Duration, environment.host.os as "Test OS", environment.host.name as "Test Server" 
+| eval Status = case(Status="Failed", "Failed ❌",  Status="Warning",  "Warning ⚠️", 1==1, Status)
+| eval Duration = case(Duration &gt; 30, Duration . " ❌",  Status="Warning",  Duration .  " ⚠️", 1==1, Duration)
+| eval Error = if(isnull(Error), "✅", Error)
+| transpose column_name=Details 
+| rename "row 1" as Results</query>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="link.visible">false</option>
+      </table>
+    </panel>
+    <panel depends="$screenshot$">
+      <title>Screenshot</title>
+      <viz type="imageviewer_for_splunk.imageviewer">
+        <search base="testinfo">
+          <query>| table screenshot</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">372</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+  </row>
+  <row depends="$item_id$,$waterfall$">
+    <panel>
+      <title></title>
+      <viz type="timeline_app.timeline">
+        <search base="performance_logs">
+          <query>| search _time=$event_start$ 
+| spath input=last_page 
+| table logs, url 
+| mvexpand logs 
+| spath input=logs 
+| fields - logs 
+| stats last(params.documentURL) as documentURL, values(method) as methods, values(url) as url, values(eval(if(isnull('params.response.status'),'params.errorText','params.response.status'))) as Status, values(params.request.url) as requestUrl, values(params.response.url) as responseUrl, values(params.type) as Type, max(params.encodedDataLength) as Size, min(params.timestamp) as start, max(params.timestamp) as end, min(params.wallTime) as _time, max(eval(if((method="Network.loadingFinished" or method="Network.loadingFailed"),'params.timestamp',0))) as finished by params.requestId 
+| eval Duration = (finished-start)*1000 
+| eval documentURL = replace(documentURL, "https?://","") 
+| eval url = replace(url, "https?://", "") 
+| where match(documentURL,url) 
+| sort start 
+| eval Name = coalesce(responseUrl, requestUrl) 
+| eventstats min(_time) as start_time 
+| eval Duration = floor(if(finished=0,(30 - (_time - start_time))*1000,(finished-start)*1000)) 
+| table _time, Name, Status, Duration, Type, Size, methods</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">386</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="timeline_app.timeline.axisTimeFormat">SECONDS</option>
+        <option name="timeline_app.timeline.colorMode">categorical</option>
+        <option name="timeline_app.timeline.maxColor">#DA5C5C</option>
+        <option name="timeline_app.timeline.minColor">#FFE8E8</option>
+        <option name="timeline_app.timeline.numOfBins">6</option>
+        <option name="timeline_app.timeline.tooltipTimeFormat">SECONDS</option>
+        <option name="timeline_app.timeline.useColors">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="link.visible">false</option>
+      </viz>
+    </panel>
+  </row>
+  <row depends="$item_id$">
+    <panel>
+      <chart>
+        <title>Average Page Load Duration Over Time</title>
+        <search base="performance_logs">
+          <query>| bucket _time span=10m
+| chart avg(results.duration) as duration, count(eval('results.status'="Failed")) as Errors over _time
+| predict duration as "Predicted Load Time" future_timespan=0
+| rename duration as "Load Time"
+| sort _time</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisLabelsY2.majorUnit">1</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">Load time in Seconds</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">collapsed</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.maximumNumber">3</option>
+        <option name="charting.axisY2.minimumNumber">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.overlayFields">Errors</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">top</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="charting.fieldColors">{"Errors": 0xFF0000, "Load Time": 0xFF9900, "Predicted Load Time":0x0096FF}</option>
+        <option name="link.visible">false</option>
+      </chart>
+    </panel>
+  </row>
+  <row depends="$item_id$">
+    <panel>
+      <table>
+        <title>Error Messages</title>
+        <search base="performance_logs">
+          <query>| stats count as Count by results.error
+| rename results.error as Error
+| sort -count</query>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="link.visible">false</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Test Performance by Browser</title>
+        <search base="performance_logs">
+          <query>| eval browser = 'environment.browser.name' . " " . 'environment.browser.version'
+| stats count as total, count(eval('results.status'="Failed")) as fail, avg(results.duration) as avg_tx, by browser
+| eval success=total-fail
+| table browser, success, fail, avg_tx
+| rename browser as Browser, success as Passed, fail as Failed, avg_tx as "Average"</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">false</option>
+        <option name="link.visible">false</option>
+        <format type="number" field="Average">
+          <option name="unit">sec</option>
+        </format>
+        <format type="color" field="Avg Duration">
+          <colorPalette type="list">[#FFFFFF,#F8BE34,#DC4E41]</colorPalette>
+          <scale type="threshold">15,30</scale>
+        </format>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Test Performance by OS</title>
+        <search base="performance_logs">
+          <query>| stats count as total, count(eval('results.status'="Failed")) as fail, avg(results.duration) as avg_tx by environment.host.os 
+| eval success=total-fail
+| rename environment.host.os as os
+| table os, success, fail, avg_tx
+| rename os as OS, success as Passed, fail as Failed, avg_tx as "Average"</query>
+        </search>
+        <option name="count">10</option>
+        <option name="link.visible">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">false</option>
+        <format type="number" field="Average">
+          <option name="precision">1</option>
+          <option name="unit">sec</option>
+          <option name="useThousandSeparators">false</option>
+        </format>
+        <format type="color" field="Avg Duration">
+          <colorPalette type="list">[#FFFFFF,#F8BE34,#DC4E41]</colorPalette>
+          <scale type="threshold">15,30</scale>
+        </format>
+      </table>
+    </panel>
+  </row>
+</form>

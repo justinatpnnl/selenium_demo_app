@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  	<title>Monitoring Configuration</title>
+    <link rel="shortcut icon" href="{{SPLUNKWEB_URL_PREFIX}}/static/img/favicon.ico" />
+    <link rel="stylesheet" type="text/css" href="{{SPLUNKWEB_URL_PREFIX}}/static/build/css/bootstrap-enterprise.css" />
+    <link rel="stylesheet" type="text/css" href="{{SPLUNKWEB_URL_PREFIX}}/static/build/css/splunkjs-dashboard.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="{{SPLUNKWEB_URL_PREFIX}}/static/app/selenium_demo_app/website_monitoring.css" />
+    <meta name="referrer" content="never" />
+    <meta name="referrer" content="no-referrer" />
+</head>
+<body class="simplexml preload locale-en" data-splunk-version="7.3.2" data-splunk-product="enterprise">
+<!-- 
+BEGIN LAYOUT
+This section contains the layout for the dashboard. Splunk uses proprietary
+styles in <div> tags, similar to Bootstrap's grid system. 
+-->
+    <div class="dashboard-body container-fluid" style="max-width: 1160px">
+
+        <div class="dashboard-header clearfix">
+            <h2>Website Monitoring Configuration</h2>
+        </div>
+
+        <div class="row-fluid">
+            <div class="input input-dropdown span3" id="website_monitoring_dropdown">
+                <label>Choose an existing site</label>
+            </div>
+            <div class="span2 offset7">
+                <label> </label>
+                <button id="addNewButton" type="button" class="btn btn-block">Add New</button>
+            </div>
+        </div>
+        
+        <div id="testSuite" style="display:none">
+            <div class="row-fluid">
+                <div class="span2">
+                    <h3>Item ID</h3>
+                    <input type="text" id="itemId" value="" class="editable input-block-level input-lg" />
+                </div>
+                <div class="span2">
+                    <h3>URL</h3>
+                    <input type="text" id="itemURL" value="" class="editable input-block-level input-lg" />
+                </div>
+                <div class="span2">
+                    <h3>Browser</h3>
+                    <select id="itemBrowser" name="itemBrowser" class="editable input-block-level">
+                        <option value="Chrome" selected="selected">Chrome</option>
+                        <option value="Firefox">Firefox</option>
+                    </select>
+                </div>
+                <div class="span2">
+                    <h3>Enabled</h3>
+                    <input id="testEnabled" type="checkbox" checked="1" class="editable" />
+                </div>
+            </div>
+
+            <div class="row-fluid">
+                <div class="span2">
+                    <h3>To:</h3>
+                    <input type="text" id="emailto" value="" class="editable input-block-level input-lg" />
+                </div>
+                <div class="span2">
+                    <h3>CC:</h3>
+                    <input type="text" id="emailcc" value="" class="editable input-block-level input-lg" />
+                </div>
+                <div class="span2">
+                    <h3>BCC:</h3>
+                    <input type="text" id="emailbcc" value="" class="editable input-block-level input-lg" />
+                </div>
+                <div class="span2">
+                    <h3>Alert Threshold</h3>
+                    <select id="threshold" name="threshold" class="editable input-block-level">
+                        <option value="1" selected="selected">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                    </select>
+                </div>
+            </div>
+
+            <h3>Testing Steps</h3>
+
+            <div class="row-fluid">
+                <div class="span12">
+                    <ol id="seleniumSteps" class="steps"></ol>
+                </div>
+            </div>
+            
+            <div class="row-fluid">
+                <div class="span2">
+                    <button type="button" id="addStep" class="btn btn-block btn-add-command"><i class="icon-plus-circle"></i> Add Step</button>
+                </div>
+                <div class="span2 offset6">
+                    <button type="button" id="runTest" class="btn btn-block"><i class="icon-triangle-right"></i> Run Test</button>
+                </div>
+                <div class="span2 offset">
+                    <button type="button" id="saveTestSuite" class="btn btn-block disabled">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="reportOut" class="row-fluid" style="display: none; margin-top: 25px;">
+            <div class="thumbnail span12">
+                <div id="reportResults" class="caption"></div>
+                <img id="screenshot" style="width: 100%" />
+                <div id="networkTimelinePanel" class="dashboard-row dashboard-row1" style="display: none;">
+                    <div class="dashboard-cell" style="width: 100%;">
+                        <div class="dashboard-panel clearfix">
+                            <div class="panel-element-row">
+                                <div id="networkTimeline" class="dashboard-element viz" style="width: 100%">
+                                    <div class="panel-body"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- 
+END LAYOUT
+-->
+
+<script src="{{SPLUNKWEB_URL_PREFIX}}/config?autoload=1" crossorigin="use-credentials"></script>
+<script src="{{SPLUNKWEB_URL_PREFIX}}/static/js/i18n.js"></script>
+<script src="{{SPLUNKWEB_URL_PREFIX}}/i18ncatalog?autoload=1"></script>
+<script src="{{SPLUNKWEB_URL_PREFIX}}/static/build/simplexml/index.js"></script>
+<script src="{{SPLUNKWEB_URL_PREFIX}}/static/js/contrib/bootstrap-2.3.1.min.js"></script>
+
+<script type="text/javascript">
+// <![CDATA[
+// <![CDATA[
+//
+// LIBRARY REQUIREMENTS
+//
+// In the require function, we include the necessary libraries and modules for
+// the HTML dashboard. Then, we pass variable names for these libraries and
+// modules as function parameters, in order.
+// 
+// When you add libraries or modules, remember to retain this mapping order
+// between the library or module and its function parameter. You can do this by
+// adding to the end of these lists, as shown in the commented examples below.
+require.config({
+    paths: {
+        text: "contrib/text",
+        templates: "../app/selenium_demo_app/templates"
+    }
+})
+
+require([
+    "splunkjs/mvc",
+    "splunkjs/mvc/utils",
+    "splunkjs/mvc/tokenutils",
+    "underscore",
+    "jquery",
+    "splunkjs/mvc/simplexml",
+    "splunkjs/mvc/layoutview",
+    "splunkjs/mvc/simplexml/dashboardview",
+    "splunkjs/mvc/simplexml/dashboard/panelref",
+    "splunkjs/mvc/simplexml/element/chart",
+    "splunkjs/mvc/simplexml/element/event",
+    "splunkjs/mvc/simplexml/element/html",
+    "splunkjs/mvc/simplexml/element/list",
+    "splunkjs/mvc/simplexml/element/map",
+    "splunkjs/mvc/simplexml/element/single",
+    "splunkjs/mvc/simplexml/element/table",
+    "splunkjs/mvc/simplexml/element/visualization",
+    "splunkjs/mvc/simpleform/formutils",
+    "splunkjs/mvc/simplexml/eventhandler",
+    "splunkjs/mvc/simplexml/searcheventhandler",
+    "splunkjs/mvc/simpleform/input/dropdown",
+    "splunkjs/mvc/simpleform/input/radiogroup",
+    "splunkjs/mvc/simpleform/input/linklist",
+    "splunkjs/mvc/simpleform/input/multiselect",
+    "splunkjs/mvc/simpleform/input/checkboxgroup",
+    "splunkjs/mvc/simpleform/input/text",
+    "splunkjs/mvc/simpleform/input/timerange",
+    "splunkjs/mvc/simpleform/input/submit",
+    "splunkjs/mvc/searchmanager",
+    "splunkjs/mvc/savedsearchmanager",
+    "splunkjs/mvc/postprocessmanager",
+    "splunkjs/mvc/simplexml/urltokenmodel",
+    "text!templates/seleniumStepOptions.html",
+    "text!templates/seleniumStepBlank.html",
+    "text!templates/seleniumTestResults.html",
+    "text!templates/loading.html"
+    // Add comma-separated libraries and modules manually here, for example:
+    // ..."splunkjs/mvc/simplexml/urltokenmodel",
+    // "splunkjs/mvc/tokenforwarder"
+    ],
+    function(
+        mvc,
+        utils,
+        TokenUtils,
+        _,
+        $,
+        DashboardController,
+        LayoutView,
+        Dashboard,
+        PanelRef,
+        ChartElement,
+        EventElement,
+        HtmlElement,
+        ListElement,
+        MapElement,
+        SingleElement,
+        TableElement,
+        VisualizationElement,
+        FormUtils,
+        EventHandler,
+        SearchEventHandler,
+        DropdownInput,
+        RadioGroupInput,
+        LinkListInput,
+        MultiSelectInput,
+        CheckboxGroupInput,
+        TextInput,
+        TimeRangeInput,
+        SubmitButton,
+        SearchManager,
+        SavedSearchManager,
+        PostProcessManager,
+        UrlTokenModel,
+        seleniumStepOptions,
+        seleniumStepBlank,
+        seleniumTestResults,
+        loadingSpinnerTemplate
+
+        // Add comma-separated parameter names here, for example: 
+        // ...UrlTokenModel, 
+        // TokenForwarder
+        ) {
+
+        var pageLoading = true;
+        var appname = utils.getCurrentApp();
+
+        // 
+        // TOKENS
+        //
+        
+        // Create token namespaces
+        var urlTokenModel = new UrlTokenModel();
+        mvc.Components.registerInstance('url', urlTokenModel);
+        var defaultTokenModel = mvc.Components.getInstance('default', {create: true});
+        var submittedTokenModel = mvc.Components.getInstance('submitted', {create: true});
+
+        urlTokenModel.on('url:navigate', function() {
+            defaultTokenModel.set(urlTokenModel.toJSON());
+            if (!_.isEmpty(urlTokenModel.toJSON()) && !_.all(urlTokenModel.toJSON(), _.isUndefined)) {
+                submitTokens();
+            } else {
+                submittedTokenModel.clear();
+            }
+        });
+
+        // Initialize tokens
+        defaultTokenModel.set(urlTokenModel.toJSON());
+
+        function submitTokens() {
+            // Copy the contents of the defaultTokenModel to the submittedTokenModel and urlTokenModel
+            FormUtils.submitForm({ replaceState: pageLoading });
+        }
+
+        function setToken(name, value) {
+            defaultTokenModel.set(name, value);
+            submittedTokenModel.set(name, value);
+        }
+
+        function unsetToken(name) {
+            defaultTokenModel.unset(name);
+            submittedTokenModel.unset(name);
+        }
+        
+        // Splunk service for API calls
+        var splunk_service = mvc.createService({
+            owner: "nobody"
+        });
+        
+        //
+        // SEARCH MANAGERS
+        //
+
+        new SearchManager({
+            "id": "website_monitoring_list",
+            "search": "| inputlookup selenium_monitoring_list | table ITEM_ID | sort ITEM_ID",
+            "status_buckets": 0,
+            "app": appname,
+            "auto_cancel": 90,
+            "preview": true,
+            "runWhenTimeIsUndefined": false
+        }, {tokens: true});
+
+        var seleniumSearch = new SearchManager({
+            "id": "seleniumTest",
+            "search": "",
+            "app": appname,
+            "autostart": true
+        }, {tokens: false})
+
+        seleniumSearch.on('search:done', function(e){
+            if (e.content.resultCount == 0) {
+                $("#reportResults").html(testResults({result: {status: "Failed", error: "Test failed to run, please try again."}}));
+                $("#runTest").removeClass("disabled");
+            }
+        })
+        
+        var seleniumSearchData = seleniumSearch.data('results')
+        
+        seleniumSearchData.on('data', function(status, results){
+            var _final = {}
+            var _output = {}
+            _.each(results.fields, function(field, i){
+                _output[field] = results.rows[0][i]
+            })
+            // Splunk returns an array for a multivalue field, but a string for a single
+            if (typeof _output.tests === 'string') {
+                _output.tests = [_output.tests];
+            }
+            _.each(_output.tests, function(value, i){
+                var _results = JSON.parse(value);
+                var _class = "success";
+                if (_results.status === "Failed") _class = "important";
+                if (_results.status === "Skipped") _class = "warning";
+                else _final = _results;
+                var _message = _results.status === "Skipped" ? "Skipped" : _results.status + ": " + _results.duration + " seconds";
+                $(".stepStatus:eq(" + String(i) + ")").html(statusUpdate({labelClass: _class, message: _message}));
+            })
+            $("#screenshot").attr("src", "data:image/png;base64," + _output['screenshot']).show();
+            $("#reportResults").html(testResults({result: _final}));
+            if ($("#itemBrowser").val() === 'Chrome') $("#networkTimelinePanel").show();
+            $("#runTest").removeClass("disabled");
+        });
+
+        new PostProcessManager({
+            "id": "networkTimelineSearch",
+            "search": "| fields logs | mvexpand logs | spath input=logs | stats first(params.response.status) as Status, first(params.response.url) as Name, first(params.type) as Type, max(params.encodedDataLength) as Size, min(params.timestamp) as start, max(params.timestamp) as end , min(params.wallTime) as _time, max(eval(if(method=\"Network.loadingFinished\",'params.timestamp',0))) as finished by params.requestId | sort start | streamstats count as num | eval Duration = (finished-start)*1000 | table _time, Name, Status, Duration | search Status=*",
+            "managerid": "seleniumTest",
+        }, {tokens: true, tokenNamespace: "submitted"});
+
+        //
+        // SPLUNK LAYOUT
+        //
+
+        new LayoutView({"hideFooter": true, "hideSplunkBar": false, "hideAppBar": false, "hideChrome": false})
+            .render()
+            .getContainerElement()
+            .appendChild($('.dashboard-body')[0]);
+
+        //
+        // DASHBOARD EDITOR
+        //
+
+        new Dashboard({
+            id: 'dashboard',
+            el: $('.dashboard-body'),
+            showTitle: true,
+            editable: false
+        }, {tokens: true}).render();
+
+
+        //
+        // KVSTORE Actions
+        //
+
+        var seleniumTestSuite = {};
+
+        function loadSteps(){
+            $("#seleniumSteps").html("");
+            $("#reportOut").hide('fade');
+            if (seleniumTestSuite.TESTS.length === 0) {
+                $("#itemId").val("");
+                $("#itemURL").val("");
+                $("#itemBrowser").val("Chrome");
+                addStep();
+            }
+            else {
+                $("#itemId").val(seleniumTestSuite.ITEM_ID);
+                $("#itemURL").val(seleniumTestSuite.URL);
+                $("#itemBrowser").val(seleniumTestSuite.BROWSER);
+                $("#testEnabled").prop('checked', seleniumTestSuite.ENABLED);
+                $("#emailto").val(seleniumTestSuite.EMAILTO);
+                $("#emailcc").val(seleniumTestSuite.EMAILCC);
+                $("#emailbcc").val(seleniumTestSuite.EMAILBCC);
+                $("#threshold").val(seleniumTestSuite.THRESHOLD);
+                _.each(seleniumTestSuite.TESTS, function(test, i) {
+                    $("#seleniumSteps").append(newBlankStep({id: "step" + (i+1)}));
+                    var _step = $("#step" + (i+1)).html(stepOptions({test: test}));
+                    _step.find(":checkbox").prop('checked', parseInt(test.enabled));
+                });
+                bindListeners();
+            }
+            $("#testSuite").show();
+        }
+
+        function loadWebsite(id) {
+            if (id == "NEW") {
+                seleniumTestSuite = {TESTS: []};
+                loadSteps();
+            }
+            else {
+                splunk_service.request(
+                    'storage/collections/data/selenium_monitoring_list',
+                    "GET",
+                    {"query": JSON.stringify({"ITEM_ID": id})}
+                ).done(function(data, status) {
+                    if (status == "success") {
+                        seleniumTestSuite = JSON.parse(data)[0];
+                        // Fix issues with test object stored as string when edited directly
+                        if (typeof seleniumTestSuite.TESTS === 'string') seleniumTestSuite.TESTS = JSON.parse(seleniumTestSuite.TESTS);
+                        loadSteps();
+                    }
+                });
+            }
+        }
+
+        function updateFailed(err){
+            console.log(err);
+        }
+
+        function saveCompleted(){
+            var url = "{{SPLUNKWEB_URL_PREFIX}}/app/" + appname + "/configuration?item_id="+$("#itemId").val();
+            utils.redirect(url);
+        }
+
+        function saveWebsitePerformanceItem() {
+            splunk_service.request(
+                "storage/collections/data/selenium_monitoring_list/batch_save",
+                "POST",
+                null,
+                null,
+                JSON.stringify([getTestSuite()]),
+                {"Content-Type": "application/json"},
+                function (err) {
+                    if (err) {
+                        updateFailed(err);
+                    }
+                    else {
+                        saveCompleted();
+                    }
+                }
+            );
+        }
+
+
+        //
+        // VIEWS: FORM INPUTS
+        //
+
+        var SelectSiteDropdown = new DropdownInput({
+            "id": "website_monitoring_dropdown",
+            "choices": [{"label": "Create New", "value": "NEW"}],
+            "labelField": "ITEM_ID",
+            "selectFirstChoice": false,
+            "valueField": "ITEM_ID",
+            "showClearButton": true,
+            "searchWhenChanged": true,
+            "value": "$item_id$",
+            "width": 300,
+            "managerid": "website_monitoring_list",
+            "el": $('#website_monitoring_dropdown')
+        }, {tokens: true}).on("change", function(newValue) {
+            if (newValue && newValue.length > 0) {
+                loadWebsite(newValue);
+            }
+        }).render();
+
+        submitTokens();
+
+
+        //
+        // VIEWS: VISUALIZATION ELEMENTS
+        //
+
+        new VisualizationElement({
+            "id": "networkTimeline",
+            "type": "timeline_app.timeline",
+            "drilldown": "none",
+            "timeline_app.timeline.numOfBins": "6",
+            "timeline_app.timeline.colorMode": "categorical",
+            "resizable": true,
+            "height": 700,
+            "timeline_app.timeline.maxColor": "#DA5C5C",
+            "trellis.enabled": "0",
+            "timeline_app.timeline.tooltipTimeFormat": "SUBSECONDS",
+            "timeline_app.timeline.axisTimeFormat": "SUBSECONDS",
+            "timeline_app.timeline.minColor": "#FFE8E8",
+            "trellis.scales.shared": "1",
+            "timeline_app.timeline.useColors": "1",
+            "managerid": "networkTimelineSearch",
+            "el": $('#networkTimeline')
+        }, {tokens: true, tokenNamespace: "submitted"}).render();
+
+
+        //
+        // DASHBOARD READY
+        //
+
+        DashboardController.ready();
+        pageLoading = false;
+
+        function removeStep() {
+	        $(this).closest('li').remove();
+            if ($("#seleniumSteps li").length == 0) addStep();
+        }
+        
+        //
+        // UNDERSCORE TEMPLATES
+        var newStep = _.template(seleniumStepBlank);
+        var stepOptions = _.template(seleniumStepOptions);
+        var testResults = _.template(seleniumTestResults);
+        var loadingSpinner = _.template(loadingSpinnerTemplate);
+        var newBlankStep = _.template('<li id="<%- id %>"></li>');
+        var statusUpdate = _.template('<span class="label label-<%- labelClass %>"><%- message %></span>');
+
+        function addStep() {
+            $("#seleniumSteps").append(newStep());
+            bindListeners();
+        }
+
+        function setStepOptions() {
+            $(this).closest('li').html(stepOptions({test: {command: this.value}}));
+            bindListeners();
+        }
+        
+        function bindListeners() {
+            $(".command").unbind("change").on("change", setStepOptions);
+            $(".close").unbind("click").on("click", removeStep);
+            $('.editable').unbind("change").on("change", detectChanges);
+            $('.editable').unbind("keyup").on("keyup", detectChanges);
+        }
+
+        $("#addStep").on("click", addStep);
+        
+        // Build test suite array from form
+        function getTestSuite(){
+            var _testSuite = {
+                _key: seleniumTestSuite._key,
+                _user: "nobody",
+                ITEM_ID: $("#itemId").val(),
+                URL: $("#itemURL").val(),
+                ENABLED: $("#testEnabled").prop("checked"),
+                BROWSER: $("#itemBrowser").val(),
+                EMAILTO: $("#emailto").val(),
+                EMAILCC: $("#emailcc").val(),
+                EMAILBCC: $("#emailbcc").val(),
+                THRESHOLD: $("#threshold").val(),
+                TESTS: []
+            }
+            $(".seleniumStep").each(function(index, step){
+                var _test = $(step).find(":input");
+                var _testStep = {};
+                _test.each(function(num, val) {
+                    var _value = val.type === "checkbox" ? Number($(val).prop("checked")).toString() : val.value;
+                    if (val.type !== "button") {
+                        _testStep[val.name] = _value;
+                    }
+                });
+                _testSuite.TESTS.push(_testStep);
+            });
+            return _testSuite;
+        }
+
+        // Iterate all of the steps
+        function getSteps() {
+            $("#runTest").addClass("disabled");
+            $(".stepStatus").html("");
+            $("#reportResults").html(loadingSpinner());
+            $("#screenshot").hide();
+            $("#networkTimelinePanel").hide();
+            $("#reportOut").show('fade');
+            var _testSuite = getTestSuite();
+            // Convert TESTS array into a string for passing to the SELENIUM command
+            var _testString = JSON.stringify(_testSuite).replace(/"/g, '\\"');
+            // Set search string, kicking off a new search
+            seleniumSearch.settings.unset("search");
+            seleniumSearch.settings.set("search", '| selenium test="'+_testString+'"');
+        }
+
+        $("#runTest").on("click", getSteps);
+        
+
+        // Watch for changes
+        function detectChanges() {
+            var _testSuite = getTestSuite();
+            if (_.isEqual(_testSuite, seleniumTestSuite)) {
+                $('#saveTestSuite').addClass('disabled');
+            }
+            else {
+                $('#saveTestSuite').removeClass('disabled');
+            }
+        }
+
+        $("#addNewButton").on("click", function(){
+            SelectSiteDropdown.val("NEW");
+            loadWebsite("NEW");
+        })
+
+        $("#saveTestSuite").on("click", saveWebsitePerformanceItem);
+        
+    }
+);
+// ]]>
+</script>
+</body>
+</html>
