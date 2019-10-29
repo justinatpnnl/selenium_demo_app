@@ -18,7 +18,7 @@ if __name__ == "__main__":
         collection = service.kvstore[name]
         return collection.data.query()
 
-    Get tests from kvstore
+    # Get tests from kvstore
     testData = getCollection("selenium_monitoring_list")
     count = 0
 
