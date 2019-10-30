@@ -579,7 +579,7 @@ require([
             $("#reportOut").show('fade');
             var _testSuite = getTestSuite();
             // Convert TESTS array into a string for passing to the SELENIUM command
-            var _testString = JSON.stringify(_testSuite).replace(/"/g, '\\"');
+            var _testString = JSON.stringify(_testSuite).replace(/"/g, '\\"').replace(/\\\\"/g, '\\\\\\"');
             // Set search string, kicking off a new search
             seleniumSearch.settings.unset("search");
             seleniumSearch.settings.set("search", '| selenium test="'+_testString+'"');
