@@ -141,9 +141,3 @@ button.removeStep {
 		transform: rotateX(35deg) rotateY(55deg) rotateZ(360deg);
 	}
 }
-
-/* Tooltip Hover Override for Timeline Viz */
-.splunk-timeline-tooltip .tooltip-inner {
-  padding: 10px 30px !important;
-  background: #fff !important;
-}
