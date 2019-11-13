@@ -43,7 +43,7 @@
     <input type="dropdown" token="item_id" searchWhenChanged="true">
       <label>Application Name</label>
       <search>
-        <query>index=web sourcetype=_json 
+        <query>index=web source=web_monitoring sourcetype=_json 
 | stats count by application.item_id
 | rename application.item_id as item_id
 | sort item_id</query>
