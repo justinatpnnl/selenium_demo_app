@@ -342,7 +342,7 @@ require([
 
         new PostProcessManager({
             "id": "networkTimelineSearch",
-            "search": "| fields logs | mvexpand logs | spath input=logs | stats first(params.response.status) as Status, first(params.response.url) as Name, first(params.type) as Type, max(params.encodedDataLength) as Size, min(params.timestamp) as start, max(params.timestamp) as end , min(params.wallTime) as _time, max(eval(if(method=\"Network.loadingFinished\",'params.timestamp',0))) as finished by params.requestId | sort start | streamstats count as num | eval Duration = (finished-start)*1000 | table _time, Name, Status, Duration | search Status=*",
+            "search": "| spath path=results.logs{} output=logs | fields logs | mvexpand logs | spath input=logs | stats last(eval(if(isnull('params.response.status'),'params.errorText','params.response.status'))) as Status, last(params.request.url) as requestUrl, last(params.response.url) as responseUrl, last(params.type) as Type, max(params.encodedDataLength) as Size, min(params.timestamp) as start, max(eval(if((method=\"Network.loadingFinished\" or method=\"Network.loadingFailed\"),'params.timestamp',0))) as end, min(params.wallTime) as _time by params.requestId | eval Duration = round((end-start)*1000) | search _time>0 Duration>0 | sort _time | eval Name = coalesce(responseUrl, requestUrl) | table _time, Name, Status, Duration",
             "managerid": "seleniumTest",
         }, {tokens: true, tokenNamespace: "submitted"});
 
