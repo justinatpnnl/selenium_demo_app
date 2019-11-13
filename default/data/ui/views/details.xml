@@ -1,4 +1,4 @@
-<form stylesheet="website_monitoring.css" theme="light">
+<form theme="light">
   <label>Website Performance Details</label>
   <search id="performance_logs">
     <query>| savedsearch "website_performance_details" item_id="$item_id$"</query>
