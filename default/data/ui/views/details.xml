@@ -17,18 +17,22 @@
       <condition match="$result.screenshot$!=&quot;0&quot; AND $result.logs$&gt;0">
         <set token="waterfall">1</set>
         <set token="screenshot">$result.screenshot$</set>
+        <unset token="filename"></unset>
       </condition>
       <condition match="$result.screenshot$!=&quot;0&quot; AND $result.logs$==&quot;0&quot;">
         <unset token="waterfall"></unset>
         <set token="screenshot">$result.screenshot$</set>
+        <unset token="filename"></unset>
       </condition>
       <condition match="$result.screenshot$==&quot;0&quot; AND $result.logs$&gt;0">
         <set token="waterfall">1</set>
         <unset token="screenshot"></unset>
+        <unset token="filename"></unset>
       </condition>
       <condition>
         <unset token="waterfall"></unset>
         <unset token="screenshot"></unset>
+        <unset token="filename"></unset>
       </condition>
     </done>
   </search>
@@ -159,7 +163,7 @@
     <panel>
       <title></title>
       <viz type="timeline_app.timeline">
-        <search base="performance_logs">
+        <search id="waterfall" base="performance_logs">
           <query>| search _time=$event_start$ 
 | table logs
 | mvexpand logs 
@@ -171,7 +175,7 @@
 | eval Name = coalesce(responseUrl, requestUrl) 
 | table _time, Name, Status, Duration, Type, Size</query>
         </search>
-        <option name="drilldown">none</option>
+        <option name="drilldown">all</option>
         <option name="height">386</option>
         <option name="refresh.display">progressbar</option>
         <option name="timeline_app.timeline.axisTimeFormat">SECONDS</option>
@@ -185,7 +189,32 @@
         <option name="trellis.scales.shared">1</option>
         <option name="trellis.size">medium</option>
         <option name="link.visible">false</option>
+        <drilldown>
+          <set token="filename">$row.Name$</set>
+        </drilldown>
       </viz>
+    </panel>
+    <panel depends="$filename$">
+      <title>File Details</title>
+      <table>
+        <search base="waterfall">
+          <query>| search Name="$filename$"
+| rex field=Name "https?:\/\/.*?\/(?&lt;File&gt;([\w\-\_\.]+(?:\.\w+)?))(?:$|\?)"
+| eval File = if(match(Name, "base64"), "Base64 Encoded Image", File)
+| table _time, Type, File, Duration, Status, Size, Name
+| eval Duration = Duration / 1000
+| eval Size = Size/1024</query>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <format type="number" field="Duration">
+          <option name="unit">Seconds</option>
+        </format>
+        <format type="number" field="Size">
+          <option name="unit">KB</option>
+        </format>
+      </table>
     </panel>
   </row>
   <row depends="$item_id$">
