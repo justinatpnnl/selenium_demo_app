@@ -63,9 +63,8 @@
     <panel>
       <viz type="event-timeline-viz.event-timeline-viz">
         <title>Page Availibility</title>
-        <search>
-          <query>| savedsearch "website_performance_details" item_id="$item_id$" 
-| table _time, results.status, results.error 
+        <search base="performance_logs">
+          <query>| table _time, results.status, results.error 
 | rename results.status as label, _time as start, environment.browser.name as browser, results.error as error 
 | sort limit=0 start 
 | autoregress label as previous 
@@ -79,8 +78,6 @@
 | eval group = label 
 | eval tooltip = if(label="Passed", count . " consecutive tests passed", error) 
 | table label start end group color tooltip</query>
-          <earliest>$earliest$</earliest>
-          <latest>$latest$</latest>
         </search>
         <option name="drilldown">none</option>
         <option name="event-timeline-viz.event-timeline-viz.backgroundColor">#ffffff</option>
