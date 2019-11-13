@@ -24,6 +24,7 @@ class seleniumCommand(GeneratingCommand):
         with open(os.devnull, 'w') as null_stream:
             suite = unittest.TestLoader().loadTestsFromTestCase(TestSuite)
             testrunner = unittest.TextTestRunner(stream=null_stream, verbosity=0, resultclass=TextTestResultWithSuccesses).run(suite)
+            testrunner.results['_raw'] = json.dumps(testrunner.results,sort_keys=True)
             yield testrunner.results
 
 dispatch(seleniumCommand, sys.argv, sys.stdin, sys.stdout, __name__)
