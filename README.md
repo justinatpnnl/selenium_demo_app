@@ -1,6 +1,20 @@
 # Selenium Demo App
 
-This Splunk app provides a demonstration of what is possible using the [selenium_web_transactions_generator](https://github.com/justinatpnnl/splunk_web_transactions_generator).  The main capabilities are:
+This Splunk app provides a demonstration of what is possible using the [selenium_web_transactions_generator](https://github.com/justinatpnnl/splunk_web_transactions_generator).  
+
+
+
+## Installation
+
+Download the latest release and install using the **Install app from file** feature of Splunk's **Manage Apps** page.
+
+https://github.com/justinatpnnl/selenium_demo_app/releases
+
+
+
+## Capabilities
+
+This app is meant to be a template for creating your own website performance monitoring service in Splunk. The main capabilities are:
 
 ### User interface for configuring Selenium tests
 
