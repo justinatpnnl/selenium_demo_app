@@ -1,4 +1,3 @@
-#from splunktests import splunkCollection
 from website_monitoring import TestSuite, TestGenerator
 import os, sys, unittest, json
 import splunklib.client as client
@@ -11,7 +10,7 @@ if __name__ == "__main__":
         sessionKey = line
     
     HOST = "127.0.0.1"
-    PORT = 8090
+    PORT = 8089
 
     def getCollection(name):
         service = client.connect(token=sessionKey, host=HOST, port=PORT, owner="nobody", app="selenium_demo_app")
