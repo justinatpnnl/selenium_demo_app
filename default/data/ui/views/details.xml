@@ -161,21 +161,15 @@
       <viz type="timeline_app.timeline">
         <search base="performance_logs">
           <query>| search _time=$event_start$ 
-| spath input=last_page 
-| table logs, url 
+| table logs
 | mvexpand logs 
 | spath input=logs 
-| fields - logs 
-| stats last(params.documentURL) as documentURL, values(method) as methods, values(url) as url, values(eval(if(isnull('params.response.status'),'params.errorText','params.response.status'))) as Status, values(params.request.url) as requestUrl, values(params.response.url) as responseUrl, values(params.type) as Type, max(params.encodedDataLength) as Size, min(params.timestamp) as start, max(params.timestamp) as end, min(params.wallTime) as _time, max(eval(if((method="Network.loadingFinished" or method="Network.loadingFailed"),'params.timestamp',0))) as finished by params.requestId 
-| eval Duration = (finished-start)*1000 
-| eval documentURL = replace(documentURL, "https?://","") 
-| eval url = replace(url, "https?://", "") 
-| where match(documentURL,url) 
-| sort start 
+| stats last(eval(if(isnull('params.response.status'),'params.errorText','params.response.status'))) as Status, last(params.request.url) as requestUrl, last(params.response.url) as responseUrl, last(params.type) as Type, max(params.encodedDataLength) as Size, min(params.timestamp) as start, max(eval(if((method="Network.loadingFinished" or method="Network.loadingFailed"),'params.timestamp',0))) as end, min(params.wallTime) as _time by params.requestId
+| eval Duration = round((end-start)*1000)
+| search _time&gt;0 Duration&gt;0
+| sort _time
 | eval Name = coalesce(responseUrl, requestUrl) 
-| eventstats min(_time) as start_time 
-| eval Duration = floor(if(finished=0,(30 - (_time - start_time))*1000,(finished-start)*1000)) 
-| table _time, Name, Status, Duration, Type, Size, methods</query>
+| table _time, Name, Status, Duration, Type, Size</query>
         </search>
         <option name="drilldown">none</option>
         <option name="height">386</option>
