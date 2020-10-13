@@ -26,9 +26,8 @@ if __name__ == "__main__":
     f = open(outputfile, 'w')
     f.close()
 
-    # Build tests from kvstore
     for test in testData:
-        if test.get('ENABLED') in ['True', 'true', '1', 1, True]:
+        if str(test.get('ENABLED', False)).lower() in ['true', '1']:
             # Convert TESTS to list if stored as a string
             if type(test['TESTS']) is not list:
                 test['TESTS'] = json.loads(test['TESTS'])
