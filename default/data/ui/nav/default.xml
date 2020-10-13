@@ -1,6 +1,6 @@
 <nav search_view="search">
-  <view name="details" default='true' />
-  <view name="configuration" />
+  <view name="configuration" default='true' />
+  <view name="details" />
   <collection label="More">
     <view name="search" />
     <view name="datasets" />
