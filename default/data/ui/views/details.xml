@@ -8,7 +8,7 @@
   <search id="testinfo" base="performance_logs">
     <query>| search _time=$event_start$ 
 | eval logs = mvcount(logs)
-| fields environment.*, logs, results.*, test
+| fields environment.*, application.server, logs, results.*, test
 | rename results.* as *
 | eval browser = 'environment.browser.name' . " " . 'environment.browser.version'
 | fillnull logs screenshot value=0
@@ -60,6 +60,7 @@
         <unset token="event_start"></unset>
         <unset token="screenshot"></unset>
         <unset token="waterfall"></unset>
+        <unset token="filename"></unset>
       </change>
     </input>
   </fieldset>
@@ -77,7 +78,7 @@
 | search NOT (label=Passed previous=Passed) 
 | autoregress start as end 
 | addinfo 
-| eval end = case(isnull(end), round(info_max_time,0), label="Failed", null(), 1==1, end) 
+| eval end = case((isnull(end) and label="Passed"), round(info_max_time,0), label="Failed", null(), 1==1, end) 
 | eval color = case(label="Passed", "green", label="Failed", "red", label="Warning", "yellow") 
 | eval group = label 
 | eval tooltip = if(label="Passed", count . " consecutive tests passed", error) 
@@ -133,8 +134,8 @@
         <search base="testinfo">
           <query>| eval offset = if(status="Failed", 1, 0) 
 | eval "Successful Tests" = tests_run - offset . " of " . tests_count 
-| table environment.host.os, environment.host.name, browser, status, error, duration, "Successful Tests" 
-| rename browser as "Test Browser", status as Status, error as Error, duration as Duration, environment.host.os as "Test OS", environment.host.name as "Test Server" 
+| table application.server, environment.host.os, environment.host.name, browser, status, error, duration, "Successful Tests" 
+| rename browser as "Test Browser", status as Status, error as Error, duration as Duration, environment.host.os as "Test OS", environment.host.name as "Test Server", application.server as "Web Server" 
 | eval Status = case(Status="Failed", "Failed ❌",  Status="Warning",  "Warning ⚠️", 1==1, Status)
 | eval Duration = case(Duration &gt; 30, Duration . " ❌",  Status="Warning",  Duration .  " ⚠️", 1==1, Duration)
 | eval Error = if(isnull(Error), "✅", Error)
@@ -222,12 +223,17 @@
       <chart>
         <title>Average Page Load Duration Over Time</title>
         <search base="performance_logs">
-          <query>| bucket _time span=10m
-| chart avg(results.duration) as duration, count(eval('results.status'="Failed")) as Errors over _time
+          <query>| chart avg(results.duration) as duration over _time
 | predict duration as "Predicted Load Time" future_timespan=0
 | rename duration as "Load Time"
 | sort _time</query>
         </search>
+        <search type="annotation" base="performance_logs" id="alerts">
+          <query>| search results.status!=passed
+| table _time, results.status, results.error
+| rename results.status as annotation_category, results.error as annotation_label</query>
+        </search>
+        <option name="charting.annotation.categoryColors">{"Failed":"0xff3300","Warning":"0xffcc00"}</option>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
         <option name="charting.axisLabelsY2.majorUnit">1</option>
@@ -258,7 +264,7 @@
         <option name="charting.legend.placement">top</option>
         <option name="refresh.display">progressbar</option>
         <option name="charting.fieldColors">{"Errors": 0xFF0000, "Load Time": 0xFF9900, "Predicted Load Time":0x0096FF}</option>
-        <option name="link.visible">false</option>
+        <option name="link.visible">true</option>
       </chart>
     </panel>
   </row>
