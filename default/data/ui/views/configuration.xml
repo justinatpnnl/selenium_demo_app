@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<view template="selenium_demo_app:dashboards/web_monitoring_editor.html" type="html" isDashboard="True">
+    <label>Website Monitoring Configuration</label>
+</view>

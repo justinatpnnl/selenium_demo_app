@@ -1,151 +1,140 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  	<title>Monitoring Configuration</title>
-    <link rel="shortcut icon" href="{{SPLUNKWEB_URL_PREFIX}}/static/img/favicon.ico" />
-    <link rel="stylesheet" type="text/css" href="{{SPLUNKWEB_URL_PREFIX}}/static/build/css/bootstrap-enterprise.css" />
-    <link rel="stylesheet" type="text/css" href="{{SPLUNKWEB_URL_PREFIX}}/static/build/css/splunkjs-dashboard.css" />
-    <link rel="stylesheet" type="text/css" media="all" href="{{SPLUNKWEB_URL_PREFIX}}/static/app/selenium_demo_app/website_monitoring.css" />
-    <meta name="referrer" content="never" />
-    <meta name="referrer" content="no-referrer" />
-</head>
-<body class="simplexml preload locale-en" data-splunk-version="7.3.2" data-splunk-product="enterprise">
-<!-- 
-BEGIN LAYOUT
-This section contains the layout for the dashboard. Splunk uses proprietary
-styles in <div> tags, similar to Bootstrap's grid system. 
--->
-    <header>
-        <a aria-label="Screen reader users, click here to skip the navigation bar" class="navSkip" href="#navSkip" tabIndex="1">Skip Navigation &gt;</a>
-        <div class="header splunk-header">
-                <div id="placeholder-splunk-bar">
-                    <a href="{{SPLUNKWEB_URL_PREFIX}}/app/launcher/home" class="brand" title="splunk &gt; listen to your data">splunk<strong>&gt;</strong></a>
-                </div>
-                    <div id="placeholder-app-bar"></div>
-        </div>
-        <a id="navSkip"></a>
-    </header>
-    <div class="dashboard-body container-fluid" style="max-width: 1160px">
+<!-- https://www.makotemplates.org -->
+<%!
+from splunk.appserver.mrsparkle.lib import util
+url = util.current_url_path()
+app_name = url.split("/")[3]
+%>
 
-        <div class="dashboard-header clearfix">
-            <h2>Website Monitoring Configuration</h2>
-        </div>
+<%inherit file="templates/base.html" />
 
-        <div class="row-fluid">
-            <div class="input input-dropdown span3" id="website_monitoring_dropdown">
-                <label>Choose an existing site</label>
-            </div>
-            <div class="span2 offset7">
-                <label> </label>
-                <button id="addNewButton" type="button" class="btn btn-block">Add New</button>
-            </div>
-        </div>
-        
-        <div id="testSuite" style="display:none">
-            <div class="row-fluid">
-                <div class="span2">
-                    <h3>Item ID</h3>
-                    <input type="text" id="itemId" value="" class="editable input-block-level input-lg" />
-                </div>
-                <div class="span2">
-                    <h3>URL</h3>
-                    <input type="text" id="itemURL" value="" class="editable input-block-level input-lg" />
-                </div>
-                <div class="span2">
-                    <h3>Browser</h3>
-                    <select id="itemBrowser" name="itemBrowser" class="editable input-block-level">
-                        <option value="Chrome" selected="selected">Chrome</option>
-                        <option value="Firefox">Firefox</option>
-                    </select>
-                </div>
-                <div class="span2">
-                    <h3>Enabled</h3>
-                    <input id="testEnabled" type="checkbox" checked="1" class="editable" />
-                </div>
-            </div>
+<!-- Custom CSS Links -->
+<%block name="css">
+<link rel="stylesheet" type="text/css" media="all" href="/static/app/${app_name}/css/website_monitoring.css" />
+</%block>
 
-            <div class="row-fluid">
-                <div class="span2">
-                    <h3>To:</h3>
-                    <input type="text" id="emailto" value="" class="editable input-block-level input-lg" />
-                </div>
-                <div class="span2">
-                    <h3>CC:</h3>
-                    <input type="text" id="emailcc" value="" class="editable input-block-level input-lg" />
-                </div>
-                <div class="span2">
-                    <h3>BCC:</h3>
-                    <input type="text" id="emailbcc" value="" class="editable input-block-level input-lg" />
-                </div>
-                <div class="span2">
-                    <h3>Alert Threshold</h3>
-                    <select id="threshold" name="threshold" class="editable input-block-level">
-                        <option value="1" selected="selected">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">10</option>
-                    </select>
-                </div>
-            </div>
+<!-- HTML -->
+<%block name="html">
+<div class="dashboard-header clearfix">
+	<h2>Website Monitoring Configuration</h2>
+</div>
 
-            <h3>Testing Steps</h3>
+<div class="row-fluid">
+	<div class="input input-dropdown span3" id="website_monitoring_dropdown">
+		<label>Choose an existing site</label>
+	</div>
+	<div class="span2 offset7">
+		<label> </label>
+		<button id="addNewButton" type="button" class="btn btn-block">Add New</button>
+	</div>
+</div>
 
-            <div class="row-fluid">
-                <div class="span12">
-                    <ol id="seleniumSteps" class="steps"></ol>
-                </div>
-            </div>
-            
-            <div class="row-fluid">
-                <div class="span2">
-                    <button type="button" id="addStep" class="btn btn-block btn-add-command"><i class="icon-plus-circle"></i> Add Step</button>
-                </div>
-                <div class="span2 offset6">
-                    <button type="button" id="runTest" class="btn btn-block"><i class="icon-triangle-right"></i> Run Test</button>
-                </div>
-                <div class="span2 offset">
-                    <button type="button" id="saveTestSuite" class="btn btn-block disabled">Save</button>
-                </div>
-            </div>
-        </div>
+<div id="testSuite" style="display:none">
+	<div class="row-fluid">
+		<div class="span2">
+			<h3>Item ID</h3>
+			<input type="text" id="itemId" value="" class="editable input-block-level input-lg" />
+		</div>
+		<div class="span2">
+			<h3>URL</h3>
+			<input type="text" id="itemURL" value="" class="editable input-block-level input-lg" />
+		</div>
+		<div class="span2">
+			<h3>Browser</h3>
+			<select id="itemBrowser" name="itemBrowser" class="editable input-block-level">
+				<option value="Chrome" selected="selected">Chrome</option>
+				<option value="ChromeIncognito" selected="selected">Chrome (Incognito)</option>
+				<option value="Firefox">Firefox</option>
+			</select>
+		</div>
+		<div class="span2">
+			<h3>Enabled</h3>
+			<input id="testEnabled" type="checkbox" checked="1" class="editable" />
+		</div>
+	</div>
 
-        <div id="reportOut" class="row-fluid" style="display: none; margin-top: 25px;">
-            <div class="thumbnail span12">
-                <div id="reportResults" class="caption"></div>
-                <img id="screenshot" style="width: 100%" />
-                <div id="networkTimelinePanel" class="dashboard-row dashboard-row1" style="display: none;">
-                    <div class="dashboard-cell" style="width: 100%;">
-                        <div class="dashboard-panel clearfix">
-                            <div class="panel-element-row">
-                                <div id="networkTimeline" class="dashboard-element viz" style="width: 100%">
-                                    <div class="panel-body"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+	<div class="row-fluid">
+		<div class="span2">
+			<h3>To:</h3>
+			<input type="text" id="emailto" value="" class="editable input-block-level input-lg" />
+		</div>
+		<div class="span2">
+			<h3>CC:</h3>
+			<input type="text" id="emailcc" value="" class="editable input-block-level input-lg" />
+		</div>
+		<div class="span2">
+			<h3>BCC:</h3>
+			<input type="text" id="emailbcc" value="" class="editable input-block-level input-lg" />
+		</div>
+		<div class="span2">
+			<h3>Alert Threshold</h3>
+			<select id="threshold" name="threshold" class="editable input-block-level">
+				<option value="1" selected="selected">1</option>
+				<option value="2">2</option>
+				<option value="3">3</option>
+				<option value="4">4</option>
+				<option value="5">5</option>
+				<option value="6">6</option>
+				<option value="7">7</option>
+				<option value="8">8</option>
+				<option value="9">9</option>
+				<option value="10">10</option>
+			</select>
+		</div>
+	</div>
 
-<!-- 
-END LAYOUT
--->
+	<h3>Testing Steps</h3>
 
-<script src="{{SPLUNKWEB_URL_PREFIX}}/config?autoload=1" crossorigin="use-credentials"></script>
-<script src="{{SPLUNKWEB_URL_PREFIX}}/static/js/i18n.js"></script>
-<script src="{{SPLUNKWEB_URL_PREFIX}}/i18ncatalog?autoload=1"></script>
-<script src="{{SPLUNKWEB_URL_PREFIX}}/static/build/simplexml/index.js"></script>
-<script src="{{SPLUNKWEB_URL_PREFIX}}/static/js/contrib/bootstrap-2.3.1.min.js"></script>
+	<div class="row-fluid">
+		<div class="span12">
+			<ol id="seleniumSteps" class="steps"></ol>
+		</div>
+	</div>
 
+	<div class="row-fluid">
+		<div class="span2">
+			<button type="button" id="addStep" class="btn btn-block btn-add-command"><i class="icon-plus-circle"></i>
+				Add Step</button>
+		</div>
+		<div class="span2 offset6">
+			<button type="button" id="runTest" class="btn btn-block"><i class="icon-triangle-right"></i> Run
+				Test</button>
+		</div>
+		<div class="span2 offset">
+			<button type="button" id="saveTestSuite" class="btn btn-block disabled">Save</button>
+		</div>
+	</div>
+</div>
+
+<div id="reportOut" class="row-fluid" style="display: none; margin-top: 25px;">
+	<div class="thumbnail span12">
+		<div id="reportResults" class="caption"></div>
+		<img id="screenshot" style="width: 100%" />
+		<div id="networkTimelinePanel" class="dashboard-row dashboard-row1" style="display: none;">
+			<div class="dashboard-cell" style="width: 100%;">
+				<div class="dashboard-panel clearfix">
+					<div class="panel-element-row">
+						<div id="networkTimeline" class="dashboard-element viz" style="width: 100%">
+							<div class="panel-body"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</%block>
+
+<!-- Javascript -->
+<%block name="javascript">
+<script type="text/javascript">
+	require.config({
+		paths: {
+			text: "contrib/text",
+			templates: "/static/app/${app_name}/templates"
+		}
+	})
+</script>
+<%text>
 <script type="text/javascript">
 // <![CDATA[
 // <![CDATA[
@@ -159,12 +148,6 @@ END LAYOUT
 // When you add libraries or modules, remember to retain this mapping order
 // between the library or module and its function parameter. You can do this by
 // adding to the end of these lists, as shown in the commented examples below.
-require.config({
-    paths: {
-        text: "contrib/text",
-        templates: "../app/selenium_demo_app/templates"
-    }
-})
 
 require([
     "splunkjs/mvc",
@@ -438,7 +421,7 @@ require([
         }
 
         function saveCompleted(){
-            var url = "{{SPLUNKWEB_URL_PREFIX}}/app/" + appname + "/configuration?item_id="+$("#itemId").val();
+            var url = "configuration?item_id="+$("#itemId").val();
             utils.redirect(url);
         }
 
@@ -621,5 +604,5 @@ require([
 );
 // ]]>
 </script>
-</body>
-</html>
+</%text>
+</%block>
