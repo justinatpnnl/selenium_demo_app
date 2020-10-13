@@ -1,2 +1,4 @@
 *.pyc
 bin/dev.py
+local/*
+metadata/local.meta
