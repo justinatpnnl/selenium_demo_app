@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 import app
 
-from splunklib.searchcommands import dispatch, GeneratingCommand, Configuration, Option, validators
-import os, sys, time, json, unittest
+from splunklib.searchcommands import dispatch, GeneratingCommand, Configuration, Option
+import sys, json, unittest
 from website_monitoring import TestSuite, TestGenerator
 
 class Stream2Logger(object):
